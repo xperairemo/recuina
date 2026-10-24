@@ -1,26 +1,39 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-serif: var(--font-playfair), serif;
+  --font-sans: var(--font-inter), sans-serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Fondos y Neutros */
+  --color-recuina-bg: #FAF8F5;
+  --color-recuina-card: #FFFFFF;
+  --color-recuina-sidebar: #F4F0EB;
+  --color-recuina-border: #E7E2DA;
+
+  /* Acento Verde Oliva */
+  --color-recuina-olive-50: #F2F5F3;
+  --color-recuina-olive-100: #E3EBE5;
+  --color-recuina-olive-600: #4A6B53;
+  --color-recuina-olive-700: #3D5844;
+  --color-recuina-olive-800: #2F4435;
+
+  /* Acento Terracota */
+  --color-recuina-terracotta-500: #C86D51;
+  --color-recuina-terracotta-600: #B25C42;
+
+  /* Tipografía */
+  --color-recuina-text-primary: #23211E;
+  --color-recuina-text-secondary: #6B665F;
+  --color-recuina-text-muted: #9E988F;
+
+  /* Radios */
+  --radius-cozy: 1rem;
+  --radius-pill: 9999px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-recuina-bg);
+  color: var(--color-recuina-text-primary);
+  font-family: var(--font-sans);
+  min-height: 100vh;
 }
