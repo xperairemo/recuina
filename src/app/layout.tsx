@@ -1,22 +1,21 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Header } from "@/components/layout/header";
 
-const playfair = Playfair_Display({
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
-  variable: "--font-playfair",
-  display: "swap",
 });
 
-const inter = Inter({
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Recuina — Recetario tradicional y compartido",
-  description: "Guarda, descubre y comparte recetas de cocina casera.",
+  title: "Recuina - Receptari Tradicional",
+  description: "Plataforma de receptes tradicionals de la Comunitat Valenciana",
 };
 
 export default function RootLayout({
@@ -25,9 +24,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${playfair.variable} ${inter.variable}`}>
-      <body className="antialiased selection:bg-recuina-olive-100 selection:text-recuina-olive-800">
-        {children}
+    <html lang="ca">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-stone-50 text-stone-900`}
+      >
+        <Header />
+        <main className="flex-1">{children}</main>
       </body>
     </html>
   );
