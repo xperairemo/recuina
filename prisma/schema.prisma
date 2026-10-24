@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------
+// TABLAS DE AUTENTICACIÓN (Compatibles con Auth.js / NextAuth v5)
+// ----------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts  Account[]
+  sessions  Session[]
+  recipes   Recipe[]   @relation("UserRecipes")
+  favorites Favorite[]
+  comments  Comment[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ----------------------------------------------------
+// MODELO DE NEGOCIO: RECETARIO Y COMUNIDAD
+// ----------------------------------------------------
+
+enum Difficulty {
+  FACIL
+  MEDIA
+  DIFICIL
+}
+
+model Recipe {
+  id          String     @id @default(cuid())
+  title       String
+  description String     @db.Text
+  prepTime    Int // En minutos
+  cookTime    Int? // En minutos (opcional)
+  servings    Int // Número de raciones
+  difficulty  Difficulty @default(FACIL)
+  imageUrl    String?
+  region      String? // Comarca o municipio de origen
+  familyStory String?    @db.Text // Contexto o historia familiar
+  isPublished Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  authorId String
+  author   User   @relation("UserRecipes", fields: [authorId], references: [id], onDelete: Cascade)
+
+  ingredients Ingredient[]
+  steps       Step[]
+  favorites   Favorite[]
+  comments    Comment[]
+
+  @@index([authorId])
+  @@index([title])
+  @@index([difficulty])
+  @@map("recipes")
+}
+
+model Ingredient {
+  id       String  @id @default(cuid())
+  name     String // Nombre (ej. "Harina de trigo", "Aceite de oliva")
+  quantity Float? // Cantidad numérica (ej. 250, 2)
+  unit     String? // Unidad de medida (ej. "g", "ml", "cucharada")
+  order    Int     @default(0)
+
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([recipeId])
+  @@map("ingredients")
+}
+
+model Step {
+  id          String @id @default(cuid())
+  order       Int // Paso 1, 2, 3...
+  instruction String @db.Text
+
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([recipeId])
+  @@map("steps")
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, recipeId]) // Evita favoritos duplicados del mismo usuario
+  @@index([userId])
+  @@index([recipeId])
+  @@map("favorites")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([recipeId])
+  @@index([authorId])
+  @@map("comments")
+}
