@@ -1,14 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { RecipeInput } from "@/lib/validations/recipe";
 import { RecipeCardItem, RecipeFiltersQuery, RecipeWithDetails } from "@/types/recipe.types";
-import { Prisma } from "@prisma/client";
+import { Difficulty, Prisma } from "@prisma/client";
 
 export class RecipeService {
-  /**
-   * Obtiene el listado de recetas para el catálogo principal aplicando filtros dinámicos.
-   */
+  
   static async getRecipes(filters?: RecipeFiltersQuery): Promise<RecipeCardItem[]> {
-    const where: Prisma.RecipeWhereInput = {};
+    const where: Prisma.RecipeWhereInput = {
+      isPublished: true,
+    };
 
     if (filters?.search) {
       where.OR = [
@@ -25,11 +25,6 @@ export class RecipeService {
       where.difficulty = filters.difficulty;
     }
 
-    if (filters?.maxTime) {
-      where.cookTimeMinutes = { lte: filters.maxTime };
-    }
-
-    // Filtro "¿Qué tienes a mano?": recetas que contengan al menos uno de los ingredientes indicados
     if (filters?.ingredients && filters.ingredients.length > 0) {
       where.ingredients = {
         some: {
@@ -63,9 +58,6 @@ export class RecipeService {
     });
   }
 
-  /**
-   * Obtiene el detalle completo de una receta por su identificador.
-   */
   static async getRecipeById(id: string): Promise<RecipeWithDetails | null> {
     return prisma.recipe.findUnique({
       where: { id },
@@ -97,9 +89,6 @@ export class RecipeService {
     });
   }
 
-  /**
-   * Obtiene las recetas creadas por un usuario en particular (para /mis-recetas).
-   */
   static async getRecipesByAuthorId(authorId: string): Promise<RecipeCardItem[]> {
     return prisma.recipe.findMany({
       where: { authorId },
@@ -121,23 +110,25 @@ export class RecipeService {
     });
   }
 
-  /**
-   * Crea una receta de forma transaccional junto con sus ingredientes y pasos.
-   */
   static async createRecipe(authorId: string, data: RecipeInput): Promise<RecipeWithDetails> {
     return prisma.recipe.create({
       data: {
         title: data.title,
-        description: data.description || null,
-        cookTimeMinutes: data.cookTimeMinutes,
-        difficulty: data.difficulty,
-        region: data.region,
+        description: data.description,
+        prepTime: data.prepTime,
+        cookTime: data.cookTime ?? null,
+        servings: data.servings,
+        difficulty: data.difficulty as Difficulty,
+        region: data.region || null,
+        familyStory: data.familyStory || null,
         imageUrl: data.imageUrl || null,
+        isPublished: data.isPublished ?? true,
         authorId,
         ingredients: {
           create: data.ingredients.map((ing, index) => ({
             name: ing.name,
-            amount: ing.amount || null,
+            quantity: ing.quantity ?? null,
+            unit: ing.unit || null,
             order: ing.order ?? index + 1,
           })),
         },
@@ -176,9 +167,6 @@ export class RecipeService {
     });
   }
 
-  /**
-   * Elimina una receta verificando que el usuario solicitante sea el autor legítimo.
-   */
   static async deleteRecipe(recipeId: string, authorId: string): Promise<boolean> {
     const recipe = await prisma.recipe.findUnique({
       where: { id: recipeId },
