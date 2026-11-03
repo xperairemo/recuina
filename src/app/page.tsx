@@ -1,3 +1,32 @@
+import { RecipeCard } from "@/components/recipes/RecipeCard";
+import { RecipeCardItem } from "@/types/recipe.types";
+
+// Objeto de prueba para validar RecipeCard sin tocar la base de datos
+const mockRecipe: RecipeCardItem = {
+  id: "test-1",
+  title: "Arroz al Horno Tradicional",
+  description: "Receta típica de cazuela de barro con costilla, morcilla y garbanzos de la huerta.",
+  prepTime: 20,
+  cookTime: 45,
+  servings: 4,
+  difficulty: "MEDIA",
+  imageUrl: null,
+  region: "La Plana",
+  familyStory: null,
+  isPublished: true,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  authorId: "user-1",
+  author: {
+    id: "user-1",
+    name: "Cocinero Casero",
+    image: null,
+  },
+  _count: {
+    favorites: 3,
+  },
+};
+
 export default function Home() {
   return (
     <main className="p-8 max-w-xl mx-auto space-y-6">
@@ -19,16 +48,11 @@ export default function Home() {
         </button>
       </div>
 
-      <div className="bg-recuina-card border border-recuina-border p-6 rounded-cozy shadow-sm">
-        <span className="text-xs font-semibold uppercase tracking-wider text-recuina-olive-600">
-          Tarjeta de prueba
-        </span>
-        <h2 className="font-serif text-xl text-recuina-text-primary mt-1">
-          Calabaza asada con especias
+      <div className="pt-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-[#6B665F] mb-3">
+          Prueba de Componente RecipeCard:
         </h2>
-        <p className="text-sm text-recuina-text-muted mt-2">
-          Tiempo: 45 min · Dificultad: Fácil · Región: La Plana
-        </p>
+        <RecipeCard recipe={mockRecipe} />
       </div>
     </main>
   );
