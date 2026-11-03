@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Difficulty, Prisma } from "@prisma/client";
 import { RecipeInput } from "@/lib/validations/recipe";
 
 export type { RecipeInput, IngredientInput, StepInput } from "@/lib/validations/recipe";
@@ -48,11 +48,10 @@ export type RecipeCardItem = Prisma.RecipeGetPayload<{
   };
 }>;
 
-
 export interface RecipeFiltersQuery {
   search?: string;
   region?: string;
-  difficulty?: "EASY" | "MEDIUM" | "HARD";
-  maxTime?: number;
+  difficulty?: Difficulty;
+  maxTotalTime?: number; // prepTime + (cookTime || 0)
   ingredients?: string[];
 }

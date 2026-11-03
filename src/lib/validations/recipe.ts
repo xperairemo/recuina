@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const difficultyEnum = z.enum(["EASY", "MEDIUM", "HARD"], {
+export const difficultyEnum = z.enum(["FACIL", "MEDIA", "DIFICIL"], {
   message: "Selecciona una dificultad válida",
 });
 
@@ -10,11 +10,17 @@ export const ingredientSchema = z.object({
     .trim()
     .min(1, "El nombre del ingrediente no puede estar vacío")
     .max(100, "El nombre del ingrediente es demasiado largo"),
-  amount: z
+  quantity: z.coerce
+    .number({ message: "La cantidad debe ser un número" })
+    .positive("La cantidad debe ser positiva")
+    .optional()
+    .nullable(),
+  unit: z
     .string()
     .trim()
-    .max(50, "La cantidad es demasiado larga")
+    .max(30, "La unidad es demasiado larga")
     .optional()
+    .nullable()
     .or(z.literal("")),
   order: z.number().int().nonnegative().default(0),
 });
@@ -36,25 +42,44 @@ export const recipeSchema = z.object({
   description: z
     .string()
     .trim()
-    .max(2000, "La descripción no puede superar los 2000 caracteres")
+    .min(10, "Añade una breve descripción de al menos 10 caracteres")
+    .max(2000, "La descripción no puede superar los 2000 caracteres"),
+  prepTime: z.coerce
+    .number({ message: "Introduce el tiempo de preparación en minutos" })
+    .int("Debe ser un número entero")
+    .positive("El tiempo de preparación debe ser mayor que 0 minutos"),
+  cookTime: z.coerce
+    .number({ message: "Introduce el tiempo de cocinado en minutos" })
+    .int("Debe ser un número entero")
+    .nonnegative("No puede ser negativo")
     .optional()
-    .or(z.literal("")),
-  cookTimeMinutes: z.coerce
-    .number({ message: "Introduce un tiempo de preparación válido" })
-    .int("El tiempo debe ser un número entero")
-    .positive("El tiempo de preparación debe ser mayor que 0 minutos")
-    .max(1440, "El tiempo máximo permitido es 24 horas (1440 minutos)"),
-  difficulty: difficultyEnum.default("EASY"),
+    .nullable(),
+  servings: z.coerce
+    .number({ message: "Introduce el número de raciones" })
+    .int("Las raciones deben ser un número entero")
+    .positive("Debe ser al menos 1 ración"),
+  difficulty: difficultyEnum.default("FACIL"),
   region: z
     .string()
     .trim()
-    .min(2, "Indica una comarca, municipio o región válida")
-    .max(100, "El nombre de la región es demasiado largo"),
+    .max(100, "El nombre de la comarca o región es demasiado largo")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  familyStory: z
+    .string()
+    .trim()
+    .max(3000, "La historia familiar no puede superar los 3000 caracteres")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
   imageUrl: z
     .string()
     .url("La URL de la imagen no es válida")
     .optional()
+    .nullable()
     .or(z.literal("")),
+  isPublished: z.boolean().default(true),
   ingredients: z
     .array(ingredientSchema)
     .min(1, "Debes añadir al menos un ingrediente a la receta"),
