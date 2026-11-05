@@ -41,6 +41,7 @@ export async function createRecipeAction(
       validationResult.data
     );
 
+    revalidatePath("/");
     revalidatePath("/recetas");
     revalidatePath("/mis-recetas");
 
