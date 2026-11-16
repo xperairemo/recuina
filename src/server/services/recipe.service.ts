@@ -110,6 +110,19 @@ export class RecipeService {
     });
   }
 
+  static async getUserStats(userId: string): Promise<{ myRecipesCount: number; favoritesCount: number }> {
+    const [myRecipesCount, favoritesCount] = await Promise.all([
+      prisma.recipe.count({
+        where: { authorId: userId },
+      }),
+      prisma.favorite.count({
+        where: { userId },
+      }),
+    ]);
+
+    return { myRecipesCount, favoritesCount };
+  }
+
   static async createRecipe(authorId: string, data: RecipeInput): Promise<RecipeWithDetails> {
     return prisma.recipe.create({
       data: {
