@@ -5,6 +5,7 @@ import { recipeSchema, RecipeInput } from "@/lib/validations/recipe";
 import { RecipeService } from "@/server/services/recipe.service";
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase";
+import { commentSchema } from "@/lib/validations/comment"
 
 export type ActionResponse<T = unknown> = {
   success: boolean;
@@ -223,6 +224,98 @@ export async function toggleFavoriteAction(
     return {
       success: false,
       message: "No se pudo actualizar tus favoritos.",
+    };
+  }
+}
+
+export async function createCommentAction(
+  recipeId: string,
+  content: string
+): Promise<ActionResponse> {
+  try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return {
+        success: false,
+        message: "Debes iniciar sesión con Google para dejar un comentario.",
+      };
+    }
+
+    const validation = commentSchema.safeParse({ recipeId, content });
+    if (!validation.success) {
+      const firstError =
+        validation.error.flatten().fieldErrors.content?.[0] ??
+        "El comentario no es válido.";
+      return {
+        success: false,
+        message: firstError,
+      };
+    }
+
+    await RecipeService.createComment(
+      userId,
+      validation.data.recipeId,
+      validation.data.content
+    );
+
+    revalidatePath(`/recetas/${recipeId}`);
+
+    return {
+      success: true,
+      message: "Comentario publicado.",
+    };
+  } catch (error) {
+    if (error instanceof Error && error.message === "RATE_LIMIT") {
+      return {
+        success: false,
+        message: "Espera unos segundos antes de publicar otro comentario.",
+      };
+    }
+    console.error("Error en createCommentAction:", error);
+    return {
+      success: false,
+      message: "No se pudo publicar el comentario en este momento.",
+    };
+  }
+}
+
+export async function deleteCommentAction(
+  commentId: string,
+  recipeId: string
+): Promise<ActionResponse> {
+  try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return {
+        success: false,
+        message: "No tienes autorización para realizar esta acción.",
+      };
+    }
+
+    const deleted = await RecipeService.deleteComment(commentId, userId);
+
+    if (!deleted) {
+      return {
+        success: false,
+        message: "No tienes permisos para eliminar este comentario.",
+      };
+    }
+
+    revalidatePath(`/recetas/${recipeId}`);
+
+    return {
+      success: true,
+      message: "Comentario eliminado.",
+    };
+  } catch (error) {
+    console.error("Error en deleteCommentAction:", error);
+    return {
+      success: false,
+      message: "Ocurrió un error al eliminar el comentario.",
     };
   }
 }

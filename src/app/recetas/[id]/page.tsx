@@ -4,6 +4,7 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { RecipeService } from "@/server/services/recipe.service";
 import { FavoriteButton } from "@/components/recipes/FavoriteButton";
+import { CommentSection } from "@/components/recipes/CommentSection";
 
 interface RecipeDetailPageProps {
   params: Promise<{ id: string }>;
@@ -13,9 +14,10 @@ export default async function RecipeDetailPage({ params }: RecipeDetailPageProps
   const [{ id }, session] = await Promise.all([params, auth()]);
   const userId = session?.user?.id;
 
-  const [recipe, favoriteIds] = await Promise.all([
+  const [recipe, favoriteIds, comments] = await Promise.all([
     RecipeService.getRecipeById(id),
     userId ? RecipeService.getUserFavoriteIds(userId) : Promise.resolve([]),
+    RecipeService.getCommentsByRecipeId(id),
   ]);
 
   if (!recipe) {
@@ -218,6 +220,14 @@ export default async function RecipeDetailPage({ params }: RecipeDetailPageProps
           </div>
         </section>
       </div>
+
+      {/* Módulo comunitario de comentarios y consejos */}
+      <CommentSection
+        recipeId={recipe.id}
+        recipeAuthorId={recipe.authorId}
+        currentUserId={userId}
+        comments={comments}
+      />
     </article>
   );
 }

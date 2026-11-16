@@ -284,4 +284,80 @@ export class RecipeService {
     });
     return { deleted: true, imageUrl: recipe.imageUrl };
   }
+
+  static async getCommentsByRecipeId(recipeId: string) {
+    return prisma.comment.findMany({
+      where: { recipeId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
+      },
+    });
+  }
+
+  static async createComment(authorId: string, recipeId: string, content: string) {
+    const lastComment = await prisma.comment.findFirst({
+      where: { authorId },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    });
+
+    if (lastComment) {
+      const secondsSinceLast = (Date.now() - lastComment.createdAt.getTime()) / 1000;
+      if (secondsSinceLast < 15) {
+        throw new Error("RATE_LIMIT");
+      }
+    }
+
+    return prisma.comment.create({
+      data: {
+        authorId,
+        recipeId,
+        content,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
+      },
+    });
+  }
+
+  static async deleteComment(commentId: string, userId: string): Promise<boolean> {
+    const comment = await prisma.comment.findUnique({
+      where: { id: commentId },
+      include: {
+        recipe: {
+          select: { authorId: true },
+        },
+      },
+    });
+
+    if (!comment) {
+      return false;
+    }
+
+    const canDelete =
+      comment.authorId === userId || comment.recipe.authorId === userId;
+
+    if (!canDelete) {
+      return false;
+    }
+
+    await prisma.comment.delete({
+      where: { id: commentId },
+    });
+
+    return true;
+  }
 }
