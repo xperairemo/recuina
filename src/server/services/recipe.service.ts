@@ -134,6 +134,32 @@ export class RecipeService {
     });
   }
 
+  static async getFavoriteRecipesByUserId(userId: string): Promise<RecipeCardItem[]> {
+    const favorites = await prisma.favorite.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        recipe: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
+            _count: {
+              select: {
+                favorites: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    return favorites.map((fav) => fav.recipe);
+  }
+
   static async getUserStats(userId: string): Promise<{ myRecipesCount: number; favoritesCount: number }> {
     const [myRecipesCount, favoritesCount] = await Promise.all([
       prisma.recipe.count({
@@ -143,7 +169,6 @@ export class RecipeService {
         where: { userId },
       }),
     ]);
-
     return { myRecipesCount, favoritesCount };
   }
 
@@ -204,20 +229,22 @@ export class RecipeService {
     });
   }
 
-  static async deleteRecipe(recipeId: string, authorId: string): Promise<boolean> {
+ static async deleteRecipe(
+    recipeId: string,
+    authorId: string
+  ): Promise<{ deleted: boolean; imageUrl: string | null }> {
     const recipe = await prisma.recipe.findUnique({
       where: { id: recipeId },
-      select: { authorId: true },
+      select: { authorId: true, imageUrl: true },
     });
 
     if (!recipe || recipe.authorId !== authorId) {
-      return false;
+      return { deleted: false, imageUrl: null };
     }
 
     await prisma.recipe.delete({
       where: { id: recipeId },
     });
-
-    return true;
+    return { deleted: true, imageUrl: recipe.imageUrl };
   }
 }

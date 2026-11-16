@@ -74,17 +74,27 @@ export async function deleteRecipeAction(
       };
     }
 
-    const deleted = await RecipeService.deleteRecipe(recipeId, userId);
+    const result = await RecipeService.deleteRecipe(recipeId, userId);
 
-    if (!deleted) {
+    if (!result.deleted) {
       return {
         success: false,
         message: "No se encontró la receta o no tienes permisos para eliminarla.",
       };
     }
 
+    // Si la receta tenía imagen en Supabase Storage, la eliminamos para no dejar huérfanos
+    if (result.imageUrl && result.imageUrl.includes("/recipe-images/")) {
+      const storagePath = result.imageUrl.split("/recipe-images/")[1];
+      if (storagePath) {
+        await supabaseAdmin.storage.from("recipe-images").remove([storagePath]);
+      }
+    }
+
+    revalidatePath("/");
     revalidatePath("/recetas");
     revalidatePath("/mis-recetas");
+    revalidatePath("/favoritos");
     revalidatePath(`/recetas/${recipeId}`);
 
     return {

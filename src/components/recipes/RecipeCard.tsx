@@ -5,6 +5,7 @@ import { Difficulty } from "@prisma/client";
 
 interface RecipeCardProps {
   recipe: RecipeCardItem;
+  footerAction?: React.ReactNode;
 }
 
 const difficultyLabels: Record<Difficulty, { label: string; colorClass: string }> = {
@@ -22,12 +23,12 @@ const difficultyLabels: Record<Difficulty, { label: string; colorClass: string }
   },
 };
 
-export function RecipeCard({ recipe }: RecipeCardProps) {
+export function RecipeCard({ recipe, footerAction }: RecipeCardProps) {
   const difficultyInfo = difficultyLabels[recipe.difficulty];
   const totalTime = recipe.prepTime + (recipe.cookTime || 0);
 
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#E7E2DA] bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-[#E7E2DA] bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
       {/* 1. Contenedor de la Imagen de Portada */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#F4F0EB]">
         {recipe.imageUrl ? (
@@ -56,14 +57,12 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
 
       {/* 2. Cuerpo de la Tarjeta */}
       <div className="flex flex-1 flex-col p-5">
-        {/* Región de origen si está informada */}
         {recipe.region && (
           <p className="mb-1 text-xs font-semibold tracking-wide text-[#C86D51] uppercase">
             {recipe.region}
           </p>
         )}
 
-        {/* Título de la Receta con enlace accesible al detalle */}
         <h3 className="mb-2 line-clamp-1 font-serif text-xl font-bold text-[#23211E] transition-colors group-hover:text-[#4A6B53]">
           <Link href={`/recetas/${recipe.id}`} className="focus:outline-none">
             <span className="absolute inset-0" aria-hidden="true" />
@@ -71,7 +70,6 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
           </Link>
         </h3>
 
-        {/* Descripción truncada a 2 líneas */}
         <p className="mb-4 line-clamp-2 text-sm text-[#6B665F]">
           {recipe.description}
         </p>
@@ -112,7 +110,6 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
             <span>{recipe.servings} rac.</span>
           </div>
 
-          {/* Contador de favoritos */}
           {recipe._count.favorites > 0 && (
             <div className="ml-auto flex items-center gap-1 text-[#C86D51]">
               <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 20 20">
@@ -123,6 +120,13 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
           )}
         </div>
       </div>
+
+      {/* 3. Barra opcional integrada dentro de la propia tarjeta */}
+      {footerAction && (
+        <div className="relative z-10 flex items-center justify-between border-t border-[#E7E2DA] bg-[#FAF8F5]/70 px-5 py-3">
+          {footerAction}
+        </div>
+      )}
     </article>
   );
 }
