@@ -18,7 +18,7 @@ export class RecipeService {
     }
 
     if (filters?.region) {
-      where.region = { contains: filters.region, mode: "insensitive" };
+      where.region = { equals: filters.region, mode: "insensitive" };
     }
 
     if (filters?.difficulty) {
@@ -28,15 +28,17 @@ export class RecipeService {
     if (filters?.ingredients && filters.ingredients.length > 0) {
       where.ingredients = {
         some: {
-          name: {
-            in: filters.ingredients,
-            mode: "insensitive",
-          },
+          OR: filters.ingredients.map((ing) => ({
+            name: {
+              contains: ing,
+              mode: "insensitive",
+            },
+          })),
         },
       };
     }
 
-    return prisma.recipe.findMany({
+    const recipes = await prisma.recipe.findMany({
       where,
       orderBy: {
         createdAt: "desc",
@@ -56,6 +58,28 @@ export class RecipeService {
         },
       },
     });
+
+    if (filters?.maxTotalTime) {
+      return recipes.filter(
+        (r) => r.prepTime + (r.cookTime ?? 0) <= filters.maxTotalTime!
+      );
+    }
+    return recipes;
+  }
+
+  static async getAvailableRegions(): Promise<string[]> {
+    const results = await prisma.recipe.findMany({
+      where: {
+        isPublished: true,
+        region: { not: null },
+      },
+      select: { region: true },
+      distinct: ["region"],
+      orderBy: { region: "asc" },
+    });
+    return results
+      .map((r) => r.region)
+      .filter((region): region is string => Boolean(region && region.trim()));
   }
 
   static async getRecipeById(id: string): Promise<RecipeWithDetails | null> {
