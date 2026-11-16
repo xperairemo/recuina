@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, Lora } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fontSans = Plus_Jakarta_Sans({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const fontSerif = Lora({
+  variable: "--font-serif",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Recuina - Receptari Tradicional",
-  description: "Plataforma de receptes tradicionals de la Comunitat Valenciana",
+  title: "Recuina — Recetario Tradicional",
+  description: "Plataforma web colaborativa y recetario digital personal",
 };
 
 export default function RootLayout({
@@ -24,12 +24,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ca">
+    <html lang="es">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-stone-50 text-stone-900`}
+        className={`${fontSans.variable} ${fontSerif.variable} font-sans antialiased min-h-screen flex flex-col bg-[#FAF8F5] text-[#23211E]`}
       >
         <Header />
-        <main className="flex-1">{children}</main>
+        <div className="flex-1 flex">
+          <main className="flex-1 min-w-0">{children}</main>
+        </div>
       </body>
     </html>
   );
