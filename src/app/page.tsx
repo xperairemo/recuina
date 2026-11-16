@@ -22,6 +22,8 @@ export default async function Home({ searchParams }: HomePageProps) {
     RecipeService.getAvailableRegions(),
   ]);
 
+  const userId = session?.user?.id;
+
   const validDifficulties: Difficulty[] = ["FACIL", "MEDIA", "DIFICIL"];
   const difficulty = validDifficulties.includes(
     resolvedParams.difficulty as Difficulty
@@ -45,13 +47,16 @@ export default async function Home({ searchParams }: HomePageProps) {
       (ingredients && ingredients.length > 0)
   );
 
-  const recipes = await RecipeService.getRecipes({
-    search: resolvedParams.search,
-    region: resolvedParams.region,
-    difficulty,
-    maxTotalTime: Number.isNaN(maxTotalTime) ? undefined : maxTotalTime,
-    ingredients,
-  });
+  const [recipes, favoriteIds] = await Promise.all([
+    RecipeService.getRecipes({
+      search: resolvedParams.search,
+      region: resolvedParams.region,
+      difficulty,
+      maxTotalTime: Number.isNaN(maxTotalTime) ? undefined : maxTotalTime,
+      ingredients,
+    }),
+    userId ? RecipeService.getUserFavoriteIds(userId) : Promise.resolve([]),
+  ]);
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-10">
@@ -81,7 +86,12 @@ export default async function Home({ searchParams }: HomePageProps) {
         {recipes.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {recipes.map((recipe) => (
-              <RecipeCard key={recipe.id} recipe={recipe} />
+              <RecipeCard
+                key={recipe.id}
+                recipe={recipe}
+                isFavorite={favoriteIds.includes(recipe.id)}
+                isAuthenticated={!!userId}
+              />
             ))}
           </div>
         ) : (

@@ -48,7 +48,12 @@ export default async function FavoritosPage() {
         <section aria-label="Recetas favoritas">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {favoriteRecipes.map((recipe) => (
-              <RecipeCard key={recipe.id} recipe={recipe} />
+              <RecipeCard
+                key={recipe.id}
+                recipe={recipe}
+                isFavorite={true}
+                isAuthenticated={true}
+              />
             ))}
           </div>
         </section>

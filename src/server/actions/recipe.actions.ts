@@ -189,3 +189,40 @@ export async function uploadRecipeImageAction(
     };
   }
 }
+
+export async function toggleFavoriteAction(
+  recipeId: string
+): Promise<ActionResponse<{ isFavorite: boolean }>> {
+  try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return {
+        success: false,
+        message: "Inicia sesión con Google para guardar recetas en favoritos.",
+      };
+    }
+
+    const result = await RecipeService.toggleFavorite(userId, recipeId);
+
+    revalidatePath("/");
+    revalidatePath("/mis-recetas");
+    revalidatePath("/favoritos");
+    revalidatePath(`/recetas/${recipeId}`);
+
+    return {
+      success: true,
+      message: result.isFavorite
+        ? "Receta guardada en favoritos."
+        : "Receta eliminada de favoritos.",
+      data: result,
+    };
+  } catch (error) {
+    console.error("Error en toggleFavoriteAction:", error);
+    return {
+      success: false,
+      message: "No se pudo actualizar tus favoritos.",
+    };
+  }
+}

@@ -2,9 +2,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { RecipeCardItem } from "@/types/recipe.types";
 import { Difficulty } from "@prisma/client";
+import { FavoriteButton } from "@/components/recipes/FavoriteButton";
 
 interface RecipeCardProps {
   recipe: RecipeCardItem;
+  isFavorite?: boolean;
+  isAuthenticated?: boolean;
   footerAction?: React.ReactNode;
 }
 
@@ -23,7 +26,12 @@ const difficultyLabels: Record<Difficulty, { label: string; colorClass: string }
   },
 };
 
-export function RecipeCard({ recipe, footerAction }: RecipeCardProps) {
+export function RecipeCard({
+  recipe,
+  isFavorite = false,
+  isAuthenticated = false,
+  footerAction,
+}: RecipeCardProps) {
   const difficultyInfo = difficultyLabels[recipe.difficulty];
   const totalTime = recipe.prepTime + (recipe.cookTime || 0);
 
@@ -45,7 +53,17 @@ export function RecipeCard({ recipe, footerAction }: RecipeCardProps) {
           </div>
         )}
 
-        {/* Badge de Dificultad superpuesto */}
+        {/* Botón flotante de Favorito (arriba izquierda) */}
+        <div className="absolute top-3 left-3">
+          <FavoriteButton
+            recipeId={recipe.id}
+            initialIsFavorite={isFavorite}
+            isAuthenticated={isAuthenticated}
+            variant="icon"
+          />
+        </div>
+
+        {/* Badge de Dificultad superpuesto (arriba derecha) */}
         <div className="absolute top-3 right-3">
           <span
             className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold backdrop-blur-sm ${difficultyInfo.colorClass}`}

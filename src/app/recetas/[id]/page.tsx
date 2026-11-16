@@ -1,22 +1,29 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { auth } from "@/lib/auth";
 import { RecipeService } from "@/server/services/recipe.service";
+import { FavoriteButton } from "@/components/recipes/FavoriteButton";
 
 interface RecipeDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
 export default async function RecipeDetailPage({ params }: RecipeDetailPageProps) {
-  const { id } = await params;
-  const recipe = await RecipeService.getRecipeById(id);
+  const [{ id }, session] = await Promise.all([params, auth()]);
+  const userId = session?.user?.id;
 
-  // Si la receta no existe en Supabase, Next.js activa automáticamente la pantalla 404
+  const [recipe, favoriteIds] = await Promise.all([
+    RecipeService.getRecipeById(id),
+    userId ? RecipeService.getUserFavoriteIds(userId) : Promise.resolve([]),
+  ]);
+
   if (!recipe) {
     notFound();
   }
 
-  // Mapeo amigable del enum de dificultad
+  const isFavorite = favoriteIds.includes(recipe.id);
+
   const difficultyLabels = {
     FACIL: "Fácil",
     MEDIA: "Media",
@@ -28,8 +35,6 @@ export default async function RecipeDetailPage({ params }: RecipeDetailPageProps
     MEDIA: "bg-amber-50 text-amber-800 border-amber-200",
     DIFICIL: "bg-rose-50 text-rose-800 border-rose-200",
   };
-
-  const totalTime = recipe.prepTime + (recipe.cookTime ?? 0);
 
   return (
     <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
@@ -59,32 +64,44 @@ export default async function RecipeDetailPage({ params }: RecipeDetailPageProps
           {recipe.description}
         </p>
 
-        {/* Autor y Fecha */}
-        <div className="flex items-center gap-3 pt-2 border-t border-stone-200/60">
-          {recipe.author.image ? (
-            <img
-              src={recipe.author.image}
-              alt={recipe.author.name ?? "Autor"}
-              className="w-10 h-10 rounded-full border border-stone-300 object-cover"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-stone-200 text-stone-700 font-semibold text-sm flex items-center justify-center">
-              {recipe.author.name?.charAt(0).toUpperCase() ?? "U"}
+        {/* Autor, Fecha y Botón de Favorito */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-stone-200/60">
+          <div className="flex items-center gap-3">
+            {recipe.author.image ? (
+              <Image
+                src={recipe.author.image}
+                alt={recipe.author.name ?? "Autor"}
+                width={40}
+                height={40}
+                referrerPolicy="no-referrer"
+                className="w-10 h-10 rounded-full border border-stone-300 object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-stone-200 text-stone-700 font-semibold text-sm flex items-center justify-center">
+                {recipe.author.name?.charAt(0).toUpperCase() ?? "U"}
+              </div>
+            )}
+            <div>
+              <p className="text-sm font-semibold text-stone-800">
+                {recipe.author.name ?? "Cocinero anónimo"}
+              </p>
+              <p className="text-xs text-stone-400">
+                Publicado el{" "}
+                {new Date(recipe.createdAt).toLocaleDateString("es-ES", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </p>
             </div>
-          )}
-          <div>
-            <p className="text-sm font-semibold text-stone-800">
-              {recipe.author.name ?? "Cocinero anónimo"}
-            </p>
-            <p className="text-xs text-stone-400">
-              Publicado el{" "}
-              {new Date(recipe.createdAt).toLocaleDateString("es-ES", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-            </p>
           </div>
+
+          <FavoriteButton
+            recipeId={recipe.id}
+            initialIsFavorite={isFavorite}
+            isAuthenticated={!!userId}
+            variant="pill"
+          />
         </div>
       </header>
 

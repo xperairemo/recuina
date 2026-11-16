@@ -14,7 +14,10 @@ export default async function MisRecetasPage() {
     redirect("/");
   }
 
-  const recipes = await RecipeService.getRecipesByAuthorId(userId);
+  const [recipes, favoriteIds] = await Promise.all([
+    RecipeService.getRecipesByAuthorId(userId),
+    RecipeService.getUserFavoriteIds(userId),
+  ]);
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8">
@@ -58,6 +61,8 @@ export default async function MisRecetasPage() {
               <RecipeCard
                 key={recipe.id}
                 recipe={recipe}
+                isFavorite={favoriteIds.includes(recipe.id)}
+                isAuthenticated={true}
                 footerAction={
                   <>
                     <span className="text-[11px] text-[#9E988F]">

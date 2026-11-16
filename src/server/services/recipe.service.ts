@@ -160,6 +160,43 @@ export class RecipeService {
     return favorites.map((fav) => fav.recipe);
   }
 
+  static async getUserFavoriteIds(userId: string): Promise<string[]> {
+    const favorites = await prisma.favorite.findMany({
+      where: { userId },
+      select: { recipeId: true },
+    });
+    return favorites.map((f) => f.recipeId);
+  }
+
+  static async toggleFavorite(
+    userId: string,
+    recipeId: string
+  ): Promise<{ isFavorite: boolean }> {
+    const existing = await prisma.favorite.findUnique({
+      where: {
+        userId_recipeId: {
+          userId,
+          recipeId,
+        },
+      },
+    });
+
+    if (existing) {
+      await prisma.favorite.delete({
+        where: { id: existing.id },
+      });
+      return { isFavorite: false };
+    }
+
+    await prisma.favorite.create({
+      data: {
+        userId,
+        recipeId,
+      },
+    });
+    return { isFavorite: true };
+  }
+
   static async getUserStats(userId: string): Promise<{ myRecipesCount: number; favoritesCount: number }> {
     const [myRecipesCount, favoritesCount] = await Promise.all([
       prisma.recipe.count({
