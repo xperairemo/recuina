@@ -5,42 +5,95 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   createRecipeAction,
+  updateRecipeAction,
   uploadRecipeImageAction,
 } from "@/server/actions/recipe.actions";
 import { RecipeInput } from "@/lib/validations/recipe";
 
 type FormErrors = Record<string, string[]>;
 
-export function RecipeForm() {
+export type RecipeFormInitialData = {
+  id: string;
+  title: string;
+  description: string;
+  prepTime: number;
+  cookTime: number | null;
+  servings: number;
+  difficulty: "FACIL" | "MEDIA" | "DIFICIL";
+  region: string | null;
+  familyStory: string | null;
+  imageUrl: string | null;
+  ingredients: Array<{
+    name: string;
+    quantity: number | null;
+    unit: string | null;
+  }>;
+  steps: Array<{
+    instruction: string;
+  }>;
+};
+
+interface RecipeFormProps {
+  initialData?: RecipeFormInitialData;
+}
+
+export function RecipeForm({ initialData }: RecipeFormProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
 
+  const isEditMode = Boolean(initialData);
+
   // Estados de campos base
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [prepTime, setPrepTime] = useState<number | "">("");
-  const [cookTime, setCookTime] = useState<number | "">("");
-  const [servings, setServings] = useState<number | "">(4);
-  const [difficulty, setDifficulty] = useState<"FACIL" | "MEDIA" | "DIFICIL">("FACIL");
-  const [region, setRegion] = useState("");
-  const [familyStory, setFamilyStory] = useState("");
+  const [title, setTitle] = useState(initialData?.title ?? "");
+  const [description, setDescription] = useState(initialData?.description ?? "");
+  const [prepTime, setPrepTime] = useState<number | "">(
+    initialData?.prepTime ?? ""
+  );
+  const [cookTime, setCookTime] = useState<number | "">(
+    initialData?.cookTime ?? ""
+  );
+  const [servings, setServings] = useState<number | "">(
+    initialData?.servings ?? 4
+  );
+  const [difficulty, setDifficulty] = useState<"FACIL" | "MEDIA" | "DIFICIL">(
+    initialData?.difficulty ?? "FACIL"
+  );
+  const [region, setRegion] = useState(initialData?.region ?? "");
+  const [familyStory, setFamilyStory] = useState(
+    initialData?.familyStory ?? ""
+  );
 
   // Estados para la imagen
+  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(
+    initialData?.imageUrl ?? null
+  );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(
+    initialData?.imageUrl ?? null
+  );
   const [imageError, setImageError] = useState<string | null>(null);
 
   // Arrays dinámicos
   const [ingredients, setIngredients] = useState<
     Array<{ name: string; quantity: string; unit: string }>
-  >([{ name: "", quantity: "", unit: "" }]);
+  >(
+    initialData && initialData.ingredients.length > 0
+      ? initialData.ingredients.map((ing) => ({
+          name: ing.name,
+          quantity: ing.quantity !== null ? String(ing.quantity) : "",
+          unit: ing.unit ?? "",
+        }))
+      : [{ name: "", quantity: "", unit: "" }]
+  );
 
-  const [steps, setSteps] = useState<Array<{ instruction: string }>>([
-    { instruction: "" },
-  ]);
+  const [steps, setSteps] = useState<Array<{ instruction: string }>>(
+    initialData && initialData.steps.length > 0
+      ? initialData.steps.map((st) => ({ instruction: st.instruction }))
+      : [{ instruction: "" }]
+  );
 
   // Manejo de selección de imagen
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,14 +111,21 @@ export function RecipeForm() {
       return;
     }
 
+    if (previewUrl && previewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
   };
 
   const handleRemoveImage = () => {
     setSelectedFile(null);
+    setExistingImageUrl(null);
     if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
+      if (previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
       setPreviewUrl(null);
     }
     if (fileInputRef.current) {
@@ -116,9 +176,9 @@ export function RecipeForm() {
     setFieldErrors({});
 
     startTransition(async () => {
-      let finalImageUrl: string | null = null;
+      let finalImageUrl: string | null = existingImageUrl;
 
-      // Si el usuario adjuntó una fotografía, la subimos primero a Storage
+      // Si el usuario adjuntó una fotografía nueva, la subimos primero a Storage
       if (selectedFile) {
         const formData = new FormData();
         formData.append("image", selectedFile);
@@ -156,7 +216,9 @@ export function RecipeForm() {
         })),
       };
 
-      const response = await createRecipeAction(payload);
+      const response = initialData
+        ? await updateRecipeAction(initialData.id, payload)
+        : await createRecipeAction(payload);
 
       if (!response.success) {
         setFormError(response.message || "Error al guardar la receta.");
@@ -166,7 +228,11 @@ export function RecipeForm() {
         return;
       }
 
-      router.push("/");
+      if (initialData) {
+        router.push(`/recetas/${initialData.id}`);
+      } else {
+        router.push("/");
+      }
       router.refresh();
     });
   };
@@ -231,7 +297,7 @@ export function RecipeForm() {
                   onClick={() => fileInputRef.current?.click()}
                   className="px-3.5 py-1.5 rounded-full border border-stone-300 text-stone-700 font-medium hover:bg-stone-50 transition-colors text-xs"
                 >
-                  Seleccionar archivo
+                  {previewUrl ? "Cambiar foto" : "Seleccionar archivo"}
                 </button>
                 <p>JPG, PNG o WebP. Máximo 2 MB.</p>
                 {imageError && (
@@ -490,7 +556,7 @@ export function RecipeForm() {
       {/* Botones de Acción */}
       <div className="flex items-center justify-end gap-4 pt-2">
         <Link
-          href="/"
+          href={isEditMode ? `/recetas/${initialData!.id}` : "/"}
           className="px-6 py-2.5 rounded-full border border-stone-300 text-stone-700 text-sm font-medium hover:bg-stone-50 transition-colors"
         >
           Cancelar
@@ -500,7 +566,13 @@ export function RecipeForm() {
           disabled={isPending}
           className="px-8 py-2.5 rounded-full bg-[#2F4435] hover:bg-[#3D5844] text-white text-sm font-medium transition-colors shadow-sm disabled:opacity-50"
         >
-          {isPending ? "Guardando receta e imagen..." : "Publicar receta"}
+          {isPending
+            ? isEditMode
+              ? "Guardando cambios..."
+              : "Guardando receta e imagen..."
+            : isEditMode
+              ? "Guardar cambios"
+              : "Publicar receta"}
         </button>
       </div>
     </form>

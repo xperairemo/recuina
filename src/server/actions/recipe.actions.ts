@@ -61,6 +61,78 @@ export async function createRecipeAction(
   }
 }
 
+export async function updateRecipeAction(
+  recipeId: string,
+  rawInput: RecipeInput
+): Promise<ActionResponse<{ id: string }>> {
+  try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return {
+        success: false,
+        message: "Debes iniciar sesión para editar una receta.",
+      };
+    }
+
+    const validationResult = recipeSchema.safeParse(rawInput);
+
+    if (!validationResult.success) {
+      return {
+        success: false,
+        message: "Los datos de la receta contienen errores.",
+        errors: validationResult.error.flatten().fieldErrors,
+      };
+    }
+
+    const newImageUrl = validationResult.data.imageUrl || null;
+
+    const result = await RecipeService.updateRecipe(
+      recipeId,
+      userId,
+      validationResult.data
+    );
+
+    if (!result.updated) {
+      return {
+        success: false,
+        message: "No se encontró la receta o no tienes permisos para editarla.",
+      };
+    }
+
+    // Si había una foto anterior y cambió o se eliminó, borramos el archivo antiguo de Storage
+    if (
+      result.previousImageUrl &&
+      result.previousImageUrl !== newImageUrl &&
+      result.previousImageUrl.includes("/recipe-images/")
+    ) {
+      const oldStoragePath = result.previousImageUrl.split("/recipe-images/")[1];
+      if (oldStoragePath) {
+        await supabaseAdmin.storage.from("recipe-images").remove([oldStoragePath]);
+      }
+    }
+
+    revalidatePath("/");
+    revalidatePath("/recetas");
+    revalidatePath("/mis-recetas");
+    revalidatePath("/favoritos");
+    revalidatePath(`/recetas/${recipeId}`);
+
+    return {
+      success: true,
+      message: "¡Receta actualizada con éxito!",
+      data: { id: recipeId },
+    };
+  } catch (error) {
+    console.error("Error en updateRecipeAction:", error);
+    return {
+      success: false,
+      message: "Ocurrió un error inesperado al actualizar la receta.",
+    };
+  }
+}
+
 export async function deleteRecipeAction(
   recipeId: string
 ): Promise<ActionResponse> {

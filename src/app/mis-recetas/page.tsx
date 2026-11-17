@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BookOpen, Plus } from "lucide-react";
+import { BookOpen, Pencil, Plus } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { RecipeService } from "@/server/services/recipe.service";
 import { RecipeCard } from "@/components/recipes/RecipeCard";
@@ -66,17 +66,25 @@ export default async function MisRecetasPage() {
                 footerAction={
                   <>
                     <span className="text-[11px] text-[#9E988F]">
-                      Publicada el{" "}
                       {new Date(recipe.createdAt).toLocaleDateString("es-ES", {
                         day: "numeric",
                         month: "short",
                         year: "numeric",
                       })}
                     </span>
-                    <DeleteRecipeButton
-                      recipeId={recipe.id}
-                      recipeTitle={recipe.title}
-                    />
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/recetas/${recipe.id}/editar`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[#2F4435] bg-[#E3EBE5]/70 hover:bg-[#E3EBE5] border border-[#4A6B53]/20 transition-colors"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        <span>Editar</span>
+                      </Link>
+                      <DeleteRecipeButton
+                        recipeId={recipe.id}
+                        recipeTitle={recipe.title}
+                      />
+                    </div>
                   </>
                 }
               />

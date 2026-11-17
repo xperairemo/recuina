@@ -266,6 +266,55 @@ export class RecipeService {
     });
   }
 
+  static async updateRecipe(
+    recipeId: string,
+    authorId: string,
+    data: RecipeInput
+  ): Promise<{ updated: boolean; previousImageUrl: string | null }> {
+    const existing = await prisma.recipe.findUnique({
+      where: { id: recipeId },
+      select: { authorId: true, imageUrl: true },
+    });
+
+    if (!existing || existing.authorId !== authorId) {
+      return { updated: false, previousImageUrl: null };
+    }
+
+    await prisma.recipe.update({
+      where: { id: recipeId },
+      data: {
+        title: data.title,
+        description: data.description,
+        prepTime: data.prepTime,
+        cookTime: data.cookTime ?? null,
+        servings: data.servings,
+        difficulty: data.difficulty as Difficulty,
+        region: data.region || null,
+        familyStory: data.familyStory || null,
+        imageUrl: data.imageUrl || null,
+        isPublished: data.isPublished ?? true,
+        ingredients: {
+          deleteMany: {},
+          create: data.ingredients.map((ing, index) => ({
+            name: ing.name,
+            quantity: ing.quantity ?? null,
+            unit: ing.unit || null,
+            order: ing.order ?? index + 1,
+          })),
+        },
+        steps: {
+          deleteMany: {},
+          create: data.steps.map((st, index) => ({
+            instruction: st.instruction,
+            order: st.order ?? index + 1,
+          })),
+        },
+      },
+    });
+
+    return { updated: true, previousImageUrl: existing.imageUrl };
+  }
+
  static async deleteRecipe(
     recipeId: string,
     authorId: string

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { Pencil } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { RecipeService } from "@/server/services/recipe.service";
 import { FavoriteButton } from "@/components/recipes/FavoriteButton";
@@ -25,6 +26,7 @@ export default async function RecipeDetailPage({ params }: RecipeDetailPageProps
   }
 
   const isFavorite = favoriteIds.includes(recipe.id);
+  const isAuthor = Boolean(userId && recipe.authorId === userId);
 
   const difficultyLabels = {
     FACIL: "Fácil",
@@ -66,7 +68,7 @@ export default async function RecipeDetailPage({ params }: RecipeDetailPageProps
           {recipe.description}
         </p>
 
-        {/* Autor, Fecha y Botón de Favorito */}
+        {/* Autor, Fecha y Botones de Acción */}
         <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-stone-200/60">
           <div className="flex items-center gap-3">
             {recipe.author.image ? (
@@ -98,12 +100,24 @@ export default async function RecipeDetailPage({ params }: RecipeDetailPageProps
             </div>
           </div>
 
-          <FavoriteButton
-            recipeId={recipe.id}
-            initialIsFavorite={isFavorite}
-            isAuthenticated={!!userId}
-            variant="pill"
-          />
+          <div className="flex items-center gap-2.5">
+            {isAuthor && (
+              <Link
+                href={`/recetas/${recipe.id}/editar`}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-[#2F4435] bg-[#E3EBE5]/70 hover:bg-[#E3EBE5] border border-[#4A6B53]/25 transition-colors"
+              >
+                <Pencil className="w-4 h-4" />
+                <span>Editar receta</span>
+              </Link>
+            )}
+
+            <FavoriteButton
+              recipeId={recipe.id}
+              initialIsFavorite={isFavorite}
+              isAuthenticated={!!userId}
+              variant="pill"
+            />
+          </div>
         </div>
       </header>
 
