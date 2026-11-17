@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, Lora } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Sidebar } from "@/components/layout/sidebar";
+import { Footer } from "@/components/layout/footer";
 import { auth } from "@/lib/auth";
 import { RecipeService } from "@/server/services/recipe.service";
 
@@ -45,7 +46,10 @@ export default async function RootLayout({
             myRecipesCount={stats.myRecipesCount}
             favoritesCount={stats.favoritesCount}
           />
-          <main className="flex-1 min-w-0">{children}</main>
+          <div className="flex-1 flex flex-col min-w-0">
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
         </div>
       </body>
     </html>
